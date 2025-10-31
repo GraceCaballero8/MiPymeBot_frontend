@@ -95,6 +95,42 @@ export function SellersTable() {
           Agregar vendedor
         </button>
       </div>
+      {/* Estadísticas - Siempre visibles */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <div className="flex items-center">
+            <Users className="w-8 h-8 text-blue-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600">Total vendedores</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {sellers.length}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+          <div className="flex items-center">
+            <Users className="w-8 h-8 text-green-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600">Vendedores activos</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {activeSellers}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+          <div className="flex items-center">
+            <Users className="w-8 h-8 text-red-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600">Vendedores inactivos</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {inactiveSellers}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
         <div className="flex gap-4 mb-6">
@@ -200,43 +236,6 @@ export function SellersTable() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Estadísticas - Siempre visibles */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <div className="flex items-center">
-            <Users className="w-8 h-8 text-blue-600 mr-3" />
-            <div>
-              <p className="text-sm text-gray-600">Total vendedores</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {sellers.length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-          <div className="flex items-center">
-            <Users className="w-8 h-8 text-green-600 mr-3" />
-            <div>
-              <p className="text-sm text-gray-600">Vendedores activos</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {activeSellers}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-          <div className="flex items-center">
-            <Users className="w-8 h-8 text-red-600 mr-3" />
-            <div>
-              <p className="text-sm text-gray-600">Vendedores inactivos</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {inactiveSellers}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       <SellerAddModal

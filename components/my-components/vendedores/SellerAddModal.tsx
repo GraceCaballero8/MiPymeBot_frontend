@@ -73,12 +73,26 @@ export function SellerAddModal({
         address: "",
       });
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || "Error al agregar vendedor",
-        {
-          id: loadingToast,
+      let errorMessage = "Error al agregar vendedor";
+
+      // Manejar diferentes tipos de respuesta de error
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        // Si es un array de errores de validación
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(", ");
         }
-      );
+        // Si es un objeto con constraints (error de class-validator)
+        else if (typeof msg === "object" && msg.constraints) {
+          errorMessage = Object.values(msg.constraints).join(", ");
+        }
+        // Si es un string simple
+        else if (typeof msg === "string") {
+          errorMessage = msg;
+        }
+      }
+
+      toast.error(errorMessage, { id: loadingToast });
     } finally {
       setSaving(false);
     }

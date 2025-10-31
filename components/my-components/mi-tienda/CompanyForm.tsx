@@ -50,9 +50,21 @@ export function CompanyForm() {
 
     try {
       const token = localStorage.getItem("token");
+
+      // Enviar solo los campos editables (sin id, admin_id, timestamps, etc.)
+      const updateData = {
+        name: company.name,
+        ruc: company.ruc,
+        sector: company.sector,
+        phone: company.phone,
+        address: company.address,
+        description: company.description,
+        logo_url: company.logo_url,
+      };
+
       await axios.patch(
         `http://localhost:4000/api/company/${company.id}`,
-        company,
+        updateData,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -60,12 +72,26 @@ export function CompanyForm() {
       toast.success("¡Empresa actualizada exitosamente!", { id: loadingToast });
       fetchCompanyData();
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || "Error al actualizar empresa",
-        {
-          id: loadingToast,
+      let errorMessage = "Error al actualizar empresa";
+
+      // Manejar diferentes tipos de respuesta de error
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        // Si es un array de errores de validación
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(", ");
         }
-      );
+        // Si es un objeto con constraints (error de class-validator)
+        else if (typeof msg === "object" && msg.constraints) {
+          errorMessage = Object.values(msg.constraints).join(", ");
+        }
+        // Si es un string simple
+        else if (typeof msg === "string") {
+          errorMessage = msg;
+        }
+      }
+
+      toast.error(errorMessage, { id: loadingToast });
     } finally {
       setSaving(false);
     }
