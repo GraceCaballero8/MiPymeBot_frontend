@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Profile } from "../interfaces/profile.interface";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 
 export default function ProfileSection() {
   const [form, setForm] = useState<Partial<Profile>>({});
@@ -39,33 +39,47 @@ export default function ProfileSection() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSave = async () => {
     setSaving(true);
-    const loadingToast = toast.loading('Guardando cambios...');
+    const loadingToast = toast.loading("Guardando cambios...");
     try {
-      await axios.patch(
-        "http://localhost:4000/api/profile",
-        form,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
-      toast.success('¡Perfil actualizado exitosamente!', {
+      // Solo enviar los campos permitidos por el backend
+      const updateData = {
+        first_name: form.first_name,
+        last_name_paternal: form.last_name_paternal,
+        last_name_maternal: form.last_name_maternal,
+        phone: form.phone || undefined,
+        address: form.address || undefined,
+        birth_date: form.birth_date,
+        gender: form.gender,
+        profile_image: form.profile_image || undefined,
+      };
+
+      await axios.patch("http://localhost:4000/api/profile", updateData, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      toast.success("¡Perfil actualizado exitosamente!", {
         id: loadingToast,
         duration: 3000,
       });
-    } catch {
-      toast.error('Error al guardar los cambios', {
-        id: loadingToast,
-        duration: 4000,
-      });
+    } catch (error: any) {
+      console.error("Error al actualizar perfil:", error.response?.data);
+      toast.error(
+        error.response?.data?.message || "Error al guardar los cambios",
+        {
+          id: loadingToast,
+          duration: 4000,
+        }
+      );
     } finally {
       setSaving(false);
     }
   };
-  
-
 
   if (loading) return <div className="p-6">Cargando perfil...</div>;
 
@@ -76,24 +90,22 @@ export default function ProfileSection() {
     return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
   };
 
-  
-
   return (
     <div className="space-y-6">
-        <Toaster 
-      position="top-right"
-      toastOptions={{
-        // ... opciones del toast
-      }}
-    />
-    
+      <Toaster
+        position="top-right"
+        toastOptions={
+          {
+            // ... opciones del toast
+          }
+        }
+      />
+
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">Mi Perfil</h2>
         <p className="text-gray-600 mt-1">Gestiona tu información personal</p>
       </div>
-      
-      
-      
+
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
         <div className="flex items-center mb-6">
           {form.profile_image ? (
@@ -109,7 +121,8 @@ export default function ProfileSection() {
           )}
           <div>
             <h3 className="text-xl font-medium text-gray-800">
-              {form.first_name} {form.last_name_paternal} {form.last_name_maternal}
+              {form.first_name} {form.last_name_paternal}{" "}
+              {form.last_name_maternal}
             </h3>
             <p className="text-gray-500">{form.email}</p>
             <button className="mt-2 text-indigo-600 hover:text-indigo-500 text-sm font-medium">
@@ -117,70 +130,100 @@ export default function ProfileSection() {
             </button>
           </div>
         </div>
-        
+
         <form className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
-              <input 
-                type="text" 
-                id="first-name" 
-                name="first_name" 
+              <label
+                htmlFor="first-name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Nombres
+              </label>
+              <input
+                type="text"
+                id="first-name"
+                name="first_name"
                 value={form.first_name || ""}
                 onChange={handleChange}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div>
-              <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
-              <input 
-                type="text" 
-                id="last-name" 
-                name="last_name_paternal" 
+              <label
+                htmlFor="last-name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Apellido Paterno
+              </label>
+              <input
+                type="text"
+                id="last-name"
+                name="last_name_paternal"
                 value={form.last_name_paternal || ""}
                 onChange={handleChange}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div>
-              <label htmlFor="last-name-maternal" className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
-              <input 
-                type="text" 
-                id="last-name-maternal" 
-                name="last_name_maternal" 
+              <label
+                htmlFor="last-name-maternal"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Apellido Materno
+              </label>
+              <input
+                type="text"
+                id="last-name-maternal"
+                name="last_name_maternal"
                 value={form.last_name_maternal || ""}
                 onChange={handleChange}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div>
-              <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
-              <input 
-                type="text" 
-                id="dni" 
-                name="dni" 
+              <label
+                htmlFor="dni"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                DNI
+              </label>
+              <input
+                type="text"
+                id="dni"
+                name="dni"
                 value={form.dni || ""}
                 onChange={handleChange}
                 readOnly
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 bg-gray-100 text-gray-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 bg-gray-100 text-gray-500"
               />
             </div>
             <div>
-              <label htmlFor="birth-date" className="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento</label>
-              <input 
-                type="date" 
-                id="birth-date" 
-                name="birth_date" 
+              <label
+                htmlFor="birth-date"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Fecha de nacimiento
+              </label>
+              <input
+                type="date"
+                id="birth-date"
+                name="birth_date"
                 value={form.birth_date || ""}
                 onChange={handleChange}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Género</label>
-              <select 
-                id="gender" 
-                name="gender" 
+              <label
+                htmlFor="gender"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Género
+              </label>
+              <select
+                id="gender"
+                name="gender"
                 value={form.gender || ""}
                 onChange={handleChange}
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
@@ -192,65 +235,90 @@ export default function ProfileSection() {
               </select>
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono / WhatsApp</label>
-              <input 
-                type="tel" 
-                id="phone" 
-                name="phone" 
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Teléfono / WhatsApp
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
                 value={form.phone || ""}
                 onChange={handleChange}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
             <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-              <textarea 
-                id="address" 
-                name="address" 
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Dirección
+              </label>
+              <textarea
+                id="address"
+                name="address"
                 value={form.address || ""}
                 onChange={handleChange}
                 rows={2}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
           </div>
-          
+
           <div className="border-t pt-6">
-            <h3 className="text-lg font-medium mb-4 text-gray-800">Configuración de cuenta</h3>
+            <h3 className="text-lg font-medium mb-4 text-gray-800">
+              Configuración de cuenta
+            </h3>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <input 
-                  type="email" 
-                  id="email" 
-                  name="email" 
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Correo electrónico
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
                   value={form.email || ""}
-                  onChange={handleChange}
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                  readOnly
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 bg-gray-100 text-gray-500"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  El correo electrónico no se puede modificar
+                </p>
               </div>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input 
-                  type="password" 
-                  id="password" 
-                  name="password" 
-                  placeholder="Dejar en blanco para mantener la contraseña actual" 
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="Dejar en blanco para mantener la contraseña actual"
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3"
             >
               Cancelar
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
               className="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"

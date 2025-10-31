@@ -8,14 +8,12 @@ import { DialogUserDelete } from "./modal-delete";
 import { DialogProductUpdate } from "./modal-edit-product";
 import { DialogProductDelete } from "./modal-delete-product";
 import { useSearchParams } from "next/navigation";
-import { Company } from '../interfaces/company.interface';
+import { Company } from "../interfaces/company.interface";
+import { Seller } from "../interfaces/seller.interface";
 import { DialogCompanyAdd } from "./modal-add-company";
 import ProfileSection from "./profile";
 import { Profile } from "../interfaces/profile.interface";
-import toast, { Toaster } from 'react-hot-toast';
-import { Seller } from "../interfaces/seller.interface";
-
-
+import toast, { Toaster } from "react-hot-toast";
 
 interface Product {
   id: number;
@@ -69,11 +67,10 @@ function AdminDashboardContent() {
     description: "",
     logo_url: "",
     phone: "",
-    sector: ""
+    sector: "",
   });
   const [loadingCompany, setLoadingCompany] = useState(false);
   const [savingCompany, setSavingCompany] = useState(false);
-
 
   //Estado para vendedores
   const [sellers, setSellers] = useState<Seller[]>([]);
@@ -90,25 +87,28 @@ function AdminDashboardContent() {
     email: "",
     phone: "",
     dni: "",
-    start_date: new Date().toISOString().split('T')[0],
-    points: 0,
-    status: 'active'
+    dni_verifier: "",
+    birth_date: new Date().toISOString().split("T")[0],
+    gender: "MASCULINO",
+    status: "ACTIVE",
+    password: "",
   });
   const [savingSeller, setSavingSeller] = useState(false);
 
-  const filteredCompanies = companies.filter(company =>
-    company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Arreglar: companies ahora es un array, pero /api/company/my devuelve un objeto
+  const filteredCompanies = Array.isArray(companies)
+    ? companies.filter((company) =>
+        company?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
 
   const handleSave = async () => {
     setSaving(true);
     setMessage("");
     try {
-      await axios.patch(
-        "http://localhost:4000/api/profile",
-        form,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
+      await axios.patch("http://localhost:4000/api/profile", form, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
       setMessage("✅ Perfil actualizado");
     } catch {
       setMessage("❌ Error al guardar");
@@ -146,16 +146,17 @@ function AdminDashboardContent() {
         return;
       }
 
-      const response = await axios.get("http://localhost:4000/api/company/my", {
+      // GET /api/company para obtener TODAS las empresas (vista admin)
+      const response = await axios.get("http://localhost:4000/api/company", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const validCompanies = (response.data || []).filter((c: any) => c?.name);
-      setCompanies(validCompanies);
-
-      setCompanies(response.data);
+      // Asegurarse de que sea un array
+      const companiesData = Array.isArray(response.data) ? response.data : [];
+      setCompanies(companiesData.filter((c: any) => c?.name));
     } catch (error) {
       console.error("Error fetching companies:", error);
+      setCompanies([]);
     } finally {
       setLoadingCompanies(false);
     }
@@ -175,9 +176,9 @@ function AdminDashboardContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.data && response.data.length > 0) {
-        // Si ya existe una empresa, carga sus datos
-        setCompanyData(response.data[0]);
+      // El backend ahora devuelve un objeto o null
+      if (response.data) {
+        setCompanyData(response.data);
       } else {
         // Si no hay empresa, deja los campos vacíos
         setCompanyData({
@@ -187,7 +188,7 @@ function AdminDashboardContent() {
           description: "",
           logo_url: "",
           phone: "",
-          sector: ""
+          sector: "",
         });
       }
     } catch (error) {
@@ -201,9 +202,9 @@ function AdminDashboardContent() {
   // Guardar datos de la empresa
   const handleSaveCompany = async () => {
     setSavingCompany(true);
-    
-    const loadingToast = toast.loading('Guardando datos de la empresa...');
-    
+
+    const loadingToast = toast.loading("Guardando datos de la empresa...");
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -211,43 +212,58 @@ function AdminDashboardContent() {
         return;
       }
 
+      // Limpiar datos vacíos
+      const cleanData = { ...companyData };
+      Object.keys(cleanData).forEach((key) => {
+        if (cleanData[key as keyof typeof cleanData] === "") {
+          delete cleanData[key as keyof typeof cleanData];
+        }
+      });
+
       let response;
-      
+
       // Si ya existe una empresa (tiene id), actualiza
       if (companyData.id) {
         response = await axios.patch(
           `http://localhost:4000/api/company/${companyData.id}`,
-          companyData,
+          cleanData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // Si no existe, créala
         response = await axios.post(
           "http://localhost:4000/api/company",
-          companyData,
+          cleanData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-      
+
       // Actualiza los datos con la respuesta del servidor
       setCompanyData(response.data);
-      
-      toast.success('¡Datos de la empresa guardados exitosamente!', {
+
+      toast.success("¡Datos de la empresa guardados exitosamente!", {
         id: loadingToast,
         duration: 3000,
       });
-    } catch (error) {
-      toast.error('Error al guardar los datos de la empresa', {
-        id: loadingToast,
-        duration: 4000,
-      });
+    } catch (error: any) {
+      console.error("Error al guardar empresa:", error.response?.data);
+      toast.error(
+        error.response?.data?.message ||
+          "Error al guardar los datos de la empresa",
+        {
+          id: loadingToast,
+          duration: 4000,
+        }
+      );
     } finally {
       setSavingCompany(false);
     }
   };
 
   const handleCompanyChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => setCompanyData({ ...companyData, [e.target.name]: e.target.value });
 
   // Modifica el useEffect para cargar los datos de la empresa
@@ -255,7 +271,7 @@ function AdminDashboardContent() {
     fetchUsers();
     fetchProducts();
     fetchCompanies();
-    fetchCompanyData(); 
+    fetchCompanyData();
   }, []);
 
   async function fetchProducts() {
@@ -287,15 +303,20 @@ function AdminDashboardContent() {
         window.location.href = "/";
         return;
       }
-      const response = await axios.get("http://localhost:4000/api/sellers", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setSellers(response.data);
+      // Cambiar endpoint a /api/users/sellers
+      const response = await axios.get(
+        "http://localhost:4000/api/users/sellers",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setSellers(response.data || []);
     } catch (error) {
       console.error("Error fetching sellers:", error);
       toast.error("Error al cargar los vendedores");
+      setSellers([]); // Asegurar que sellers sea un array
     } finally {
       setLoadingSellers(false);
     }
@@ -309,9 +330,11 @@ function AdminDashboardContent() {
   // Función para guardar un vendedor (nuevo o existente)
   const handleSaveSeller = async () => {
     setSavingSeller(true);
-    
-    const loadingToast = toast.loading(sellerForm.id ? 'Actualizando vendedor...' : 'Agregando vendedor...');
-    
+
+    const loadingToast = toast.loading(
+      sellerForm.id ? "Actualizando vendedor..." : "Agregando vendedor..."
+    );
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -320,7 +343,7 @@ function AdminDashboardContent() {
       }
 
       let response;
-      
+
       // Si ya existe un vendedor (tiene id), actualízalo
       if (sellerForm.id) {
         response = await axios.patch(
@@ -331,21 +354,23 @@ function AdminDashboardContent() {
       } else {
         // Si no existe, créalo
         response = await axios.post(
-          "http://localhost:4000/api/sellers",
+          "http://localhost:4000/api/users/sellers",
           sellerForm,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-      
+
       // Actualiza la lista de vendedores
       if (sellerForm.id) {
-        setSellers(sellers.map(seller => 
-          seller.id === sellerForm.id ? response.data : seller
-        ));
+        setSellers(
+          sellers.map((seller) =>
+            seller.id === sellerForm.id ? response.data : seller
+          )
+        );
       } else {
         setSellers([...sellers, response.data]);
       }
-      
+
       // Cierra el modal y resetea el formulario
       setOpenDialogSellerAdd(false);
       setOpenDialogSellerUpdate(false);
@@ -356,17 +381,29 @@ function AdminDashboardContent() {
         email: "",
         phone: "",
         dni: "",
-        start_date: new Date().toISOString().split('T')[0],
-        points: 0,
-        status: 'active'
+        dni_verifier: "",
+        birth_date: new Date().toISOString().split("T")[0],
+        gender: "MASCULINO",
+        status: "ACTIVE",
+        password: "",
       });
-      
-      toast.success(sellerForm.id ? '¡Vendedor actualizado exitosamente!' : '¡Vendedor agregado exitosamente!', {
-        id: loadingToast,
-        duration: 3000,
-      });
-    } catch (error) {
-      toast.error('Error al guardar el vendedor', {
+
+      toast.success(
+        sellerForm.id
+          ? "¡Vendedor actualizado exitosamente!"
+          : "¡Vendedor agregado exitosamente!",
+        {
+          id: loadingToast,
+          duration: 3000,
+        }
+      );
+    } catch (error: any) {
+      console.error("Error al guardar vendedor:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al guardar el vendedor";
+      toast.error(errorMessage, {
         id: loadingToast,
         duration: 4000,
       });
@@ -378,34 +415,34 @@ function AdminDashboardContent() {
   // Función para eliminar un vendedor
   const handleDeleteSeller = async () => {
     if (!sellerToDelete) return;
-    
-    const loadingToast = toast.loading('Eliminando vendedor...');
-    
+
+    const loadingToast = toast.loading("Eliminando vendedor...");
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         window.location.href = "/";
         return;
       }
-      
+
       await axios.delete(
         `http://localhost:4000/api/sellers/${sellerToDelete.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Actualiza la lista de vendedores
-      setSellers(sellers.filter(seller => seller.id !== sellerToDelete.id));
-      
+      setSellers(sellers.filter((seller) => seller.id !== sellerToDelete.id));
+
       // Cierra el modal
       setOpenDialogSellerDelete(false);
       setSellerToDelete(null);
-      
-      toast.success('¡Vendedor eliminado exitosamente!', {
+
+      toast.success("¡Vendedor eliminado exitosamente!", {
         id: loadingToast,
         duration: 3000,
       });
     } catch (error) {
-      toast.error('Error al eliminar el vendedor', {
+      toast.error("Error al eliminar el vendedor", {
         id: loadingToast,
         duration: 4000,
       });
@@ -414,29 +451,35 @@ function AdminDashboardContent() {
 
   // Función para cambiar el estado de un vendedor
   const toggleSellerStatus = async (seller: Seller) => {
-    const newStatus = seller.status === 'active' ? 'inactive' : 'active';
-    
+    const newStatus = seller.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         window.location.href = "/";
         return;
       }
-      
+
       const response = await axios.patch(
         `http://localhost:4000/api/sellers/${seller.id}`,
         { ...seller, status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Actualiza la lista de vendedores
-      setSellers(sellers.map(s => 
-        s.id === seller.id ? response.data : s
-      ));
-      
-      toast.success(`Vendedor ${newStatus === 'active' ? 'activado' : 'desactivado'} exitosamente`);
+      setSellers(sellers.map((s) => (s.id === seller.id ? response.data : s)));
+
+      toast.success(
+        `Vendedor ${
+          newStatus === "ACTIVE" ? "activado" : "desactivado"
+        } exitosamente`
+      );
     } catch (error) {
-      toast.error(`Error al ${newStatus === 'active' ? 'activar' : 'desactivar'} el vendedor`);
+      toast.error(
+        `Error al ${
+          newStatus === "ACTIVE" ? "activar" : "desactivar"
+        } el vendedor`
+      );
     }
   };
 
@@ -445,7 +488,7 @@ function AdminDashboardContent() {
     fetchSellers();
     fetchProducts();
     fetchCompanies();
-    fetchCompanyData(); 
+    fetchCompanyData();
   }, []);
 
   useEffect(() => {
@@ -461,43 +504,42 @@ function AdminDashboardContent() {
 
   return (
     <div className="flex gap-6 p-6 min-h-screen bg-gray-50">
-
-      <Toaster 
-      position="top-right"
-      toastOptions={{
-        style: {
-          background: '#363636',
-          color: '#fff',
-        },
-        success: {
-          duration: 3000,
-          iconTheme: {
-            primary: '#10b981',
-            secondary: '#fff',
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#363636",
+            color: "#fff",
           },
-        },
-        error: {
-          duration: 4000,
-          iconTheme: {
-            primary: '#ef4444',
-            secondary: '#fff',
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: "#10b981",
+              secondary: "#fff",
+            },
           },
-        },
-      }}
-    />
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
 
       {/* Sidebar */}
       <div className="w-64 shrink-0 bg-white rounded-xl p-4 border border-gray-200 shadow-md h-fit sticky top-6">
         <div className="p-4 mb-4">
           <div className="flex items-center">
             <div className="text-xl font-bold text-indigo-600">
-              <UsersIcon size={24} className="inline mr-2" />Admin Panel
+              <UsersIcon size={24} className="inline mr-2" />
+              Admin Panel
             </div>
           </div>
         </div>
-        
-        <div className="space-y-2">
 
+        <div className="space-y-2">
           <a
             href="?view=profile"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
@@ -520,7 +562,7 @@ function AdminDashboardContent() {
             <Package size={20} />
             <span className="font-medium">Mi Tienda</span>
           </a>
-          
+
           <a
             href="?view=sellers"
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
@@ -579,16 +621,19 @@ function AdminDashboardContent() {
           </p>
         </div>*/}
 
-        
         {view === "profile" && <ProfileSection />}
 
         {view === "store" && (
           <div className="space-y-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800">Mi Tienda</h2>
-              <p className="text-gray-600 mt-1">Configura los datos de tu negocio</p>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Mi Tienda
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Configura los datos de tu negocio
+              </p>
             </div>
-            
+
             {loadingCompany ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-indigo-600"></div>
@@ -611,43 +656,61 @@ function AdminDashboardContent() {
                     <h3 className="text-xl font-medium text-gray-800">
                       {companyData.name || "Nombre de la tienda"}
                     </h3>
-                    <p className="text-gray-500">{companyData.ruc || "RUC no registrado"}</p>
+                    <p className="text-gray-500">
+                      {companyData.ruc || "RUC no registrado"}
+                    </p>
                     <button className="mt-2 text-indigo-600 hover:text-indigo-500 text-sm font-medium">
-                      <i className="fas fa-camera mr-1"></i> Cambiar logo de la tienda
+                      <i className="fas fa-camera mr-1"></i> Cambiar logo de la
+                      tienda
                     </button>
                   </div>
                 </div>
-                
+
                 <form className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda *</label>
-                      <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Nombre de la tienda *
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
                         value={companyData.name || ""}
                         onChange={handleCompanyChange}
                         required
-                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                     <div>
-                      <label htmlFor="ruc" className="block text-sm font-medium text-gray-700 mb-1">RUC</label>
-                      <input 
-                        type="text" 
-                        id="ruc" 
-                        name="ruc" 
+                      <label
+                        htmlFor="ruc"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        RUC
+                      </label>
+                      <input
+                        type="text"
+                        id="ruc"
+                        name="ruc"
                         value={companyData.ruc || ""}
                         onChange={handleCompanyChange}
-                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                     <div>
-                      <label htmlFor="sector" className="block text-sm font-medium text-gray-700 mb-1">Rubro *</label>
-                      <select 
-                        id="sector" 
-                        name="sector" 
+                      <label
+                        htmlFor="sector"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Rubro *
+                      </label>
+                      <select
+                        id="sector"
+                        name="sector"
                         value={companyData.sector || ""}
                         onChange={handleCompanyChange}
                         required
@@ -665,52 +728,72 @@ function AdminDashboardContent() {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono / WhatsApp</label>
-                      <input 
-                        type="tel" 
-                        id="phone" 
-                        name="phone" 
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Teléfono / WhatsApp
+                      </label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
                         value={companyData.phone || ""}
                         onChange={handleCompanyChange}
-                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                      <input 
-                        type="text" 
-                        id="address" 
-                        name="address" 
+                      <label
+                        htmlFor="address"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Dirección
+                      </label>
+                      <input
+                        type="text"
+                        id="address"
+                        name="address"
                         value={companyData.address || ""}
                         onChange={handleCompanyChange}
-                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Descripción del negocio</label>
-                      <textarea 
-                        id="description" 
-                        name="description" 
-                        rows={3} 
+                      <label
+                        htmlFor="description"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Descripción del negocio
+                      </label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows={3}
                         value={companyData.description || ""}
                         onChange={handleCompanyChange}
                         className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label htmlFor="logo_url" className="block text-sm font-medium text-gray-700 mb-1">URL del logo</label>
-                      <input 
-                        type="text" 
-                        id="logo_url" 
-                        name="logo_url" 
+                      <label
+                        htmlFor="logo_url"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        URL del logo
+                      </label>
+                      <input
+                        type="text"
+                        id="logo_url"
+                        name="logo_url"
                         value={companyData.logo_url || ""}
                         onChange={handleCompanyChange}
                         placeholder="https://ejemplo.com/logo.png"
-                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" 
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                   </div>
-                  
+
                   {/*<div className="border-t pt-6">
                     <h3 className="text-lg font-medium mb-4 text-gray-800">Redes Sociales</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -740,16 +823,16 @@ function AdminDashboardContent() {
                       </div>
                     </div>
                   </div>*/}
-                  
+
                   <div className="flex justify-end">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3"
                     >
                       Cancelar
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleSaveCompany}
                       disabled={savingCompany}
                       className="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
@@ -767,7 +850,9 @@ function AdminDashboardContent() {
         {view === "sellers" && (
           <div className="space-y-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800">Vendedores</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                Vendedores
+              </h2>
               <button
                 onClick={() => setOpenDialogSellerAdd(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
@@ -776,13 +861,13 @@ function AdminDashboardContent() {
                 Agregar vendedor
               </button>
             </div>
-            
+
             {/* Barra de búsqueda y filtro */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between">
-              <div className="relative flex-grow md:mr-4 mb-4 md:mb-0">
-                <input 
-                  type="text" 
-                  placeholder="Buscar vendedores..." 
+              <div className="relative grow md:mr-4 mb-4 md:mb-0">
+                <input
+                  type="text"
+                  placeholder="Buscar vendedores..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -799,18 +884,28 @@ function AdminDashboardContent() {
                 </select>
               </div>
             </div>
-            
+
             {/* Tabla de Vendedores */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendedor</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha de ingreso</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puntos</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vendedor
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        DNI
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Teléfono
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estado
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -824,15 +919,20 @@ function AdminDashboardContent() {
                       </tr>
                     ) : sellers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                        <td
+                          colSpan={5}
+                          className="px-6 py-12 text-center text-gray-500"
+                        >
                           No hay vendedores registrados
                         </td>
                       </tr>
                     ) : (
                       sellers.map((seller) => {
                         const fullName = `${seller.first_name} ${seller.last_name_paternal} ${seller.last_name_maternal}`;
-                        const initials = `${seller.first_name.charAt(0)}${seller.last_name_paternal.charAt(0)}`.toUpperCase();
-                        
+                        const initials = `${seller.first_name.charAt(
+                          0
+                        )}${seller.last_name_paternal.charAt(0)}`.toUpperCase();
+
                         return (
                           <tr key={seller.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -849,27 +949,32 @@ function AdminDashboardContent() {
                                   </div>
                                 )}
                                 <div className="ml-4">
-                                  <p className="text-sm font-medium text-gray-900">{fullName}</p>
-                                  <p className="text-sm text-gray-500">{seller.email}</p>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {fullName}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {seller.email}
+                                  </p>
                                 </div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {new Date(seller.start_date).toLocaleDateString()}
+                              {seller.dni}-{seller.dni_verifier}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {seller.phone || "N/A"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <span className="text-sm font-medium text-gray-900">{seller.points}</span>
-                                <i className="fas fa-trophy text-yellow-500 ml-2"></i>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                seller.status === 'active' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {seller.status === 'active' ? 'Activo' : 'Inactivo'}
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  seller.status === "ACTIVE"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {seller.status === "ACTIVE"
+                                  ? "Activo"
+                                  : "Inactivo"}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -885,9 +990,15 @@ function AdminDashboardContent() {
                               </button>
                               <button
                                 onClick={() => toggleSellerStatus(seller)}
-                                className={`${seller.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                                className={`${
+                                  seller.status === "ACTIVE"
+                                    ? "text-red-600 hover:text-red-900"
+                                    : "text-green-600 hover:text-green-900"
+                                }`}
                               >
-                                {seller.status === 'active' ? 'Desactivar' : 'Activar'}
+                                {seller.status === "ACTIVE"
+                                  ? "Desactivar"
+                                  : "Activar"}
                               </button>
                             </td>
                           </tr>
@@ -898,7 +1009,7 @@ function AdminDashboardContent() {
                 </table>
               </div>
             </div>
-            
+
             {/* Resumen de rendimiento */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-lg shadow-sm p-6">
@@ -908,7 +1019,9 @@ function AdminDashboardContent() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Total vendedores</p>
-                    <p className="text-xl font-semibold mt-1">{sellers.length}</p>
+                    <p className="text-xl font-semibold mt-1">
+                      {sellers.length}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -919,18 +1032,24 @@ function AdminDashboardContent() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Vendedores activos</p>
-                    <p className="text-xl font-semibold mt-1">{sellers.filter(s => s.status === 'active').length}</p>
+                    <p className="text-xl font-semibold mt-1">
+                      {sellers.filter((s) => s.status === "ACTIVE").length}
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
-                    <i className="fas fa-trophy text-xl"></i>
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mr-3">
+                    <i className="fas fa-user-times text-xl"></i>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Puntos acumulados</p>
-                    <p className="text-xl font-semibold mt-1">{sellers.reduce((total, seller) => total + seller.points, 0)}</p>
+                    <p className="text-sm text-gray-500">
+                      Vendedores inactivos
+                    </p>
+                    <p className="text-xl font-semibold mt-1">
+                      {sellers.filter((s) => s.status === "INACTIVE").length}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -945,7 +1064,9 @@ function AdminDashboardContent() {
               <div className="mt-3">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    {openDialogSellerAdd ? 'Agregar Nuevo Vendedor' : 'Editar Vendedor'}
+                    {openDialogSellerAdd
+                      ? "Agregar Nuevo Vendedor"
+                      : "Editar Vendedor"}
                   </h3>
                   <button
                     onClick={() => {
@@ -958,9 +1079,11 @@ function AdminDashboardContent() {
                         email: "",
                         phone: "",
                         dni: "",
-                        start_date: new Date().toISOString().split('T')[0],
-                        points: 0,
-                        status: 'active'
+                        dni_verifier: "",
+                        birth_date: new Date().toISOString().split("T")[0],
+                        gender: "MASCULINO",
+                        status: "ACTIVE",
+                        password: "",
                       });
                     }}
                     className="text-gray-400 hover:text-gray-500"
@@ -968,11 +1091,16 @@ function AdminDashboardContent() {
                     <i className="fas fa-times text-xl"></i>
                   </button>
                 </div>
-                
+
                 <form className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
+                      <label
+                        htmlFor="first_name"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Nombres
+                      </label>
                       <input
                         type="text"
                         id="first_name"
@@ -985,7 +1113,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="last_name_paternal" className="block text-sm font-medium text-gray-700 mb-1">Apellido Paterno</label>
+                      <label
+                        htmlFor="last_name_paternal"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Apellido Paterno
+                      </label>
                       <input
                         type="text"
                         id="last_name_paternal"
@@ -998,7 +1131,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="last_name_maternal" className="block text-sm font-medium text-gray-700 mb-1">Apellido Materno</label>
+                      <label
+                        htmlFor="last_name_maternal"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Apellido Materno
+                      </label>
                       <input
                         type="text"
                         id="last_name_maternal"
@@ -1011,7 +1149,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Correo electrónico
+                      </label>
                       <input
                         type="email"
                         id="email"
@@ -1024,7 +1167,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                      <label
+                        htmlFor="phone"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Teléfono
+                      </label>
                       <input
                         type="tel"
                         id="phone"
@@ -1036,7 +1184,12 @@ function AdminDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="dni" className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+                      <label
+                        htmlFor="dni"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        DNI (8 dígitos)
+                      </label>
                       <input
                         type="text"
                         id="dni"
@@ -1045,35 +1198,91 @@ function AdminDashboardContent() {
                         onChange={handleSellerChange}
                         className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="12345678"
+                        maxLength={8}
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">Fecha de ingreso</label>
+                      <label
+                        htmlFor="dni_verifier"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Dígito verificador
+                      </label>
+                      <input
+                        type="text"
+                        id="dni_verifier"
+                        name="dni_verifier"
+                        value={sellerForm.dni_verifier}
+                        onChange={handleSellerChange}
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="0-9 o K"
+                        maxLength={1}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="birth_date"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Fecha de nacimiento
+                      </label>
                       <input
                         type="date"
-                        id="start_date"
-                        name="start_date"
-                        value={sellerForm.start_date}
+                        id="birth_date"
+                        name="birth_date"
+                        value={sellerForm.birth_date}
                         onChange={handleSellerChange}
                         className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="points" className="block text-sm font-medium text-gray-700 mb-1">Puntos</label>
-                      <input
-                        type="number"
-                        id="points"
-                        name="points"
-                        value={sellerForm.points}
+                      <label
+                        htmlFor="gender"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Género
+                      </label>
+                      <select
+                        id="gender"
+                        name="gender"
+                        value={sellerForm.gender}
                         onChange={handleSellerChange}
                         className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        min="0"
+                        required
+                      >
+                        <option value="MASCULINO">Masculino</option>
+                        <option value="FEMENINO">Femenino</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Contraseña
+                      </label>
+                      <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        value={sellerForm.password}
+                        onChange={handleSellerChange}
+                        className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Mínimo 8 caracteres"
+                        minLength={8}
+                        required
                       />
                     </div>
                     <div>
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                      <label
+                        htmlFor="status"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Estado
+                      </label>
                       <select
                         id="status"
                         name="status"
@@ -1081,12 +1290,12 @@ function AdminDashboardContent() {
                         onChange={handleSellerChange}
                         className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       >
-                        <option value="active">Activo</option>
-                        <option value="inactive">Inactivo</option>
+                        <option value="ACTIVE">Activo</option>
+                        <option value="INACTIVE">Inactivo</option>
                       </select>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end pt-4">
                     <button
                       type="button"
@@ -1100,9 +1309,11 @@ function AdminDashboardContent() {
                           email: "",
                           phone: "",
                           dni: "",
-                          start_date: new Date().toISOString().split('T')[0],
-                          points: 0,
-                          status: 'active'
+                          dni_verifier: "",
+                          birth_date: new Date().toISOString().split("T")[0],
+                          gender: "MASCULINO",
+                          status: "ACTIVE",
+                          password: "",
                         });
                       }}
                       className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3"
@@ -1132,10 +1343,15 @@ function AdminDashboardContent() {
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                   <i className="fas fa-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
-                <h3 className="text-lg leading-6 font-medium text-gray-900">Eliminar Vendedor</h3>
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  Eliminar Vendedor
+                </h3>
                 <div className="mt-2 px-7 py-3">
                   <p className="text-sm text-gray-500">
-                    ¿Estás seguro de que deseas eliminar al vendedor {sellerToDelete.first_name} {sellerToDelete.last_name_paternal}? Esta acción no se puede deshacer.
+                    ¿Estás seguro de que deseas eliminar al vendedor{" "}
+                    {sellerToDelete.first_name}{" "}
+                    {sellerToDelete.last_name_paternal}? Esta acción no se puede
+                    deshacer.
                   </p>
                 </div>
                 <div className="flex justify-center gap-4 mt-4">
@@ -1166,7 +1382,6 @@ function AdminDashboardContent() {
               <h2 className="text-2xl font-semibold text-gray-800">
                 🏢 Empresas
               </h2>
-              
             </div>
 
             <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
@@ -1180,7 +1395,10 @@ function AdminDashboardContent() {
                   className="flex-1 bg-transparent border-0 focus:outline-none text-gray-700 placeholder:text-gray-400"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-gray-600">
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
                     ✕
                   </button>
                 )}
@@ -1212,20 +1430,32 @@ function AdminDashboardContent() {
                           {company.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-lg text-gray-800">{company.name}</h4>
-                          <p className="text-sm text-gray-600">{company.sector}</p>
-                          <p className="text-xs text-gray-500 mt-1">{company.ruc || "-"}</p>
+                          <h4 className="font-semibold text-lg text-gray-800">
+                            {company.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {company.sector}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {company.ruc || "-"}
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-2 ml-4">
                         <button
-                          onClick={() => { setCompanyToUpdate(company); setOpenDialogCompanyUpdate(true); }}
+                          onClick={() => {
+                            setCompanyToUpdate(company);
+                            setOpenDialogCompanyUpdate(true);
+                          }}
                           className="p-2.5 hover:bg-white rounded-lg transition-all border border-gray-200"
                         >
                           <Edit2 size={18} className="text-indigo-600" />
                         </button>
                         <button
-                          onClick={() => { setCompanyToDelete(company); setOpenDialogCompanyDelete(true); }}
+                          onClick={() => {
+                            setCompanyToDelete(company);
+                            setOpenDialogCompanyDelete(true);
+                          }}
                           className="p-2.5 hover:bg-white rounded-lg transition-all border border-gray-200"
                         >
                           <Trash2 size={18} className="text-red-500" />
@@ -1370,8 +1600,6 @@ function AdminDashboardContent() {
             setUserToDelete={setUserToDelete}
           />
         )}
-
-        
 
         {openDialogProductUpdate && productToUpdate && (
           <DialogProductUpdate
