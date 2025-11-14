@@ -9,6 +9,7 @@ import {
   Building2,
   UserCircle,
   LogOut,
+  ArrowRightLeft, // Icono para movimientos
 } from "lucide-react";
 
 const menuItems = [
@@ -27,15 +28,20 @@ const menuItems = [
     label: "Vendedores",
     icon: Users,
   },
-  {
+  {/*
     href: "/admin/empresas",
     label: "Empresas",
     icon: Building2,
-  },
+  */},
   {
     href: "/admin/productos",
     label: "Productos",
     icon: Package,
+  },
+  {
+    href: "/admin/movimientos",
+    label: "Movimientos",
+    icon: ArrowRightLeft,
   },
 ];
 

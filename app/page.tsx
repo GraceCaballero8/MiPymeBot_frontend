@@ -1,15 +1,11 @@
 "use client";
 
-import axios from "axios";
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from 'next/navigation';
+import { api } from './service/fetchapi';
 
 export default function Home() {
   const [isLogin, setIsLogin] = useState(true);
-  const [isCompany, setIsCompany] = useState(false);
-
-  const [roles, setRoles] = useState<any[]>([]);
-
   const [loading, setLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -37,50 +33,32 @@ export default function Home() {
     }));
   };
 
-  async function fetchRoles() {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:4000/api/roles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setRoles(response.data.filter((role: any) => role.name !== "admin"));
-    } catch (error) {
-      console.error("Error fetching roles:", error);
-    }
-  }
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     try {
       e.preventDefault();
       setLoading(true);
-      console.log("Login:", { email: loginEmail, password: loginPassword });
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/login",
-        {
-          email: loginEmail,
-          password: loginPassword,
-        }
-      );
+      
+      const response = await api.post('/auth/login', {
+        email: loginEmail,
+        password: loginPassword,
+      });
 
-      console.log(response);
       // Backend devuelve { user, token } en login
       const token = response.data.token || response.data.accessToken;
       localStorage.setItem("token", token);
-      const userRole = response.data.user.role;
+      const userRole = response.data.user.role.name;
 
       if (userRole === "admin") {
-        window.location.href = "/admin?view=profile";
+        window.location.href = "/admin";
       } else if (userRole === "vendor" || userRole === "seller") {
-        window.location.href = "/company?view=profile";
+        window.location.href = "/company";
       } else if (userRole === "client") {
-        window.location.href = "/client?view=profile";
+        window.location.href = "/client";
       } else {
         alert("Rol no reconocido");
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       alert(error.response?.data?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
@@ -104,47 +82,45 @@ export default function Home() {
         gender: registerData.gender,
       };
 
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/register",
-        payload
-      );
+      const response = await api.post('/auth/register', payload);
       const { accessToken } = response.data;
 
       localStorage.setItem("token", accessToken);
-      window.location.href = "/admin?view=profile";
+      window.location.href = "/admin";
     } catch (error: any) {
+      console.error('Register error:', error);
       alert(error.response?.data?.message || "Error al registrar");
     } finally {
       setLoading(false);
     }
   };
 
-  async function valiteSession() {
+  async function validateSession() {
     const token = localStorage.getItem("token");
 
     if (!token) {
       return;
     }
 
-    const response = await axios.get("http://localhost:4000/api/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const role = response.data.role.name;
-    if (role === "admin") {
-      window.location.href = "/admin?view=profile";
-    } else if (role === "client") {
-      window.location.href = "/client?view=profile";
-    } else if (role === "company") {
-      window.location.href = "/company?view=profile";
+    try {
+      const response = await api.get('/auth/me');
+      const role = response.data.role.name;
+      
+      if (role === "admin") {
+        window.location.href = "/admin";
+      } else if (role === "client") {
+        window.location.href = "/client";
+      } else if (role === "company" || role === "vendor" || role === "seller") {
+        window.location.href = "/company";
+      }
+    } catch (error) {
+      console.error('Session validation error:', error);
+      localStorage.removeItem("token");
     }
   }
 
   useEffect(() => {
-    //fetchRoles();
-    valiteSession();
+    validateSession();
   }, []);
 
   return (
@@ -216,9 +192,10 @@ export default function Home() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              Iniciar Sesión
+              {loading ? "Iniciando Sesión..." : "Iniciar Sesión"}
             </button>
           </form>
         ) : (
@@ -406,9 +383,10 @@ export default function Home() {
             {/* BOTÓN */}
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              Registrarse
+              {loading ? "Registrando..." : "Registrarse"}
             </button>
           </form>
         )}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Product } from "@/app/interfaces/product.interface";
 import { Edit2, Trash2, Plus } from "lucide-react";
-import { DialogCompanyAdd } from "@/app/admin/modal-add-company";
+import { DialogProductAdd } from "./DialogProductAdd";
 import { DialogProductEdit } from "./DialogProductEdit";
 import { DialogProductDelete } from "./DialogProductDelete";
 

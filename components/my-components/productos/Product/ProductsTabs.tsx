@@ -1,7 +1,7 @@
+// components/my-components/productos/Product/ProductsTabs.tsx
 "use client";
 
 import { useState } from "react";
-import { Product, Category, Supplier } from "@/app/interfaces/product.interface";
 
 interface ProductsTabsProps {
   activeTab: string;

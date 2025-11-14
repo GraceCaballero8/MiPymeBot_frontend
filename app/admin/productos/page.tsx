@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Product, Category, Supplier } from "@/app/interfaces/product.interface";
-import { ProductsTabs } from "../../../components/my-components/productos/ProductsTabs";
-import { CategoriesTable } from "../../../components/my-components/productos/CategoriesTable";
-import { ProductsTable } from "../../../components/my-components/productos/ProductsTable";
-import { SuppliersTable } from "../../../components/my-components/productos/SuppliersTable";
+import { ProductsTabs } from "../../../components/my-components/productos/Product/ProductsTabs";
+import { CategoriesTable } from "@/components/my-components/productos/Category/CategoriesTable";
+import { ProductsTable } from "../../../components/my-components/productos/Product/ProductsTable";
+import { SuppliersTable } from "@/components/my-components/productos/Supplier/SuppliersTable";
 import toast, { Toaster } from 'react-hot-toast';
+
 
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState("products");
@@ -18,69 +19,64 @@ export default function ProductsPage() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
+  
   const fetchProducts = async () => {
-    setLoadingProducts(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
+      if (!token) return;
 
+      console.log("Enviando petición a /api/products");
       const response = await axios.get("http://localhost:4000/api/products", {
         headers: { Authorization: `Bearer ${token}` }
       });
-
+      console.log("Respuesta de productos:", response.data);
       setProducts(response.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Error al cargar los productos");
-    } finally {
-      setLoadingProducts(false);
+      console.error("Error detallado:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Status:", error.response?.status);
+        console.error("Data:", error.response?.data);
+      }
     }
   };
 
   const fetchCategories = async () => {
-    setLoadingCategories(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
+      if (!token) return;
 
+      console.log("Enviando petición a /api/categories");
       const response = await axios.get("http://localhost:4000/api/categories", {
         headers: { Authorization: `Bearer ${token}` }
       });
-
+      console.log("Respuesta de categorías:", response.data);
       setCategories(response.data);
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Error al cargar las categorías");
-    } finally {
-      setLoadingCategories(false);
+      console.error("Error detallado:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Status:", error.response?.status);
+        console.error("Data:", error.response?.data);
+      }
     }
   };
 
   const fetchSuppliers = async () => {
-    setLoadingSuppliers(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
+      if (!token) return;
 
+      console.log("Enviando petición a /api/suppliers");
       const response = await axios.get("http://localhost:4000/api/suppliers", {
         headers: { Authorization: `Bearer ${token}` }
       });
-
+      console.log("Respuesta de proveedores:", response.data);
       setSuppliers(response.data);
     } catch (error) {
-      console.error("Error fetching suppliers:", error);
-      toast.error("Error al cargar los proveedores");
-    } finally {
-      setLoadingSuppliers(false);
+      console.error("Error detallado:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Status:", error.response?.status);
+        console.error("Data:", error.response?.data);
+      }
     }
   };
 
