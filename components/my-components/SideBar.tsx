@@ -8,6 +8,8 @@ import {
   Package,
   Building2,
   UserCircle,
+  NotepadText,
+  ChartColumnIncreasingIcon,
   LogOut,
 } from "lucide-react";
 
@@ -36,6 +38,16 @@ const menuItems = [
     href: "/admin/productos",
     label: "Productos",
     icon: Package,
+  },
+  {
+    href: "/admin/movimientos",
+    label: "Movimientos",
+    icon: NotepadText,
+  },
+  {
+    href: "/admin/inventario",
+    label: "Inventario",
+    icon: ChartColumnIncreasingIcon,
   },
 ];
 
