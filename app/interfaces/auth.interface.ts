@@ -4,7 +4,11 @@ export interface User {
   first_name: string;
   last_name_paternal: string;
   last_name_maternal: string;
-  role: string;
+  role: {
+    id: number;
+    name: string;
+    alias: string;
+  };
   status: string;
   company_id?: number | null;
   created_at: string;

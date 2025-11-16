@@ -39,28 +39,32 @@ export const useAuth = () => {
 
 export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token")
-  );
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const { get, post } = useFetchApi();
 
   const checkUserSession = useCallback(async () => {
     // Si no hay token, no hay sesión activa
-    if (!localStorage.getItem("token")) {
+    const storedToken =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!storedToken) {
       setIsLoading(false);
       return;
     }
 
+    setToken(storedToken);
+
     try {
-      const statusResponse = await get<{ user: User }>("/users/me");
-      setUser(statusResponse.user);
+      const userData = await get<User>("/users/me");
+      setUser(userData);
     } catch (error) {
       // Si falla, limpiar sesión
       setUser(null);
       setToken(null);
-      localStorage.removeItem("token");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +82,9 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
           credentials
         );
 
-        localStorage.setItem("token", response.token);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", response.token);
+        }
         setToken(response.token);
         setUser(response.user);
       } catch (error) {
@@ -91,8 +97,10 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
   const logout = useCallback(async () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("token");
-    window.location.href = "/";
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      window.location.href = "/";
+    }
   }, []);
 
   return (

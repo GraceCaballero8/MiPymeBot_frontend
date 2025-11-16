@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { RefreshCw, FileDown, AlertTriangle, Package } from "lucide-react";
 import useFetchApi from "@/hooks/use-fetch";
 import { InventoryStatus } from "@/app/interfaces/inventory.interface";
+import { useAuth } from "@/context/auth-context";
 
 export function InventoryTable() {
   const { get } = useFetchApi();

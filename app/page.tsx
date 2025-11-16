@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 import useFetchApi from "@/hooks/use-fetch";
 
 export default function Home() {
-  const { get, post } = useFetchApi();
+  const { login, user, isLoading } = useAuth();
+  const router = useRouter();
+  const { post } = useFetchApi();
+
   const [isLogin, setIsLogin] = useState(true);
-  const [isCompany, setIsCompany] = useState(false);
-
-  const [roles, setRoles] = useState<any[]>([]);
-
   const [loading, setLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
@@ -37,45 +38,23 @@ export default function Home() {
     }));
   };
 
-  async function fetchRoles() {
-    try {
-      const data = await get<any[]>("/roles");
-      setRoles(data.filter((role: any) => role.name !== "admin"));
-    } catch (error) {
-      console.error("Error fetching roles:", error);
+  // Redirigir si ya está autenticado
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push("/admin?view=profile");
     }
-  }
+  }, [user, isLoading, router]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      e.preventDefault();
-      setLoading(true);
-      console.log("Login:", { email: loginEmail, password: loginPassword });
-      const response = await post<
-        { user: { role: string }; token: string },
-        { email: string; password: string }
-      >("/auth/login", {
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      console.log(response);
-      // Backend devuelve { user, token } en login
-      const token = response.token;
-      localStorage.setItem("token", token);
-      const userRole = response.user.role;
-
-      if (userRole === "admin") {
-        window.location.href = "/admin?view=profile";
-      } else if (userRole === "vendor" || userRole === "seller") {
-        window.location.href = "/company?view=profile";
-      } else if (userRole === "client") {
-        window.location.href = "/client?view=profile";
-      } else {
-        alert("Rol no reconocido");
-      }
+      await login({ email: loginEmail, password: loginPassword });
+      // El AuthContext se encarga de la redirección
+      router.push("/admin?view=profile");
     } catch (error: any) {
-      alert(error.response?.data?.message || "Error al iniciar sesión");
+      alert(error?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -84,8 +63,8 @@ export default function Home() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      // exacto al auth.DTO
       const payload = {
         email: registerData.email,
         password: registerData.password,
@@ -102,40 +81,29 @@ export default function Home() {
         "/auth/register",
         payload
       );
-      const token = response.token;
 
-      localStorage.setItem("token", token);
-      window.location.href = "/admin?view=profile";
+      // Guardar token y hacer login automático
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", response.token);
+      }
+
+      // Redirigir al panel
+      router.push("/admin?view=profile");
+      window.location.reload(); // Recargar para que el AuthContext actualice
     } catch (error: any) {
-      alert(error.response?.data?.message || "Error al registrar");
+      alert(error?.message || "Error al registrar");
     } finally {
       setLoading(false);
     }
   };
 
-  async function valiteSession() {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return;
-    }
-
-    const data = await get<{ role: { name: string } }>("/users/me");
-
-    const role = data.role.name;
-    if (role === "admin") {
-      window.location.href = "/admin?view=profile";
-    } else if (role === "client") {
-      window.location.href = "/client?view=profile";
-    } else if (role === "company") {
-      window.location.href = "/company?view=profile";
-    }
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div>Cargando...</div>
+      </div>
+    );
   }
-
-  useEffect(() => {
-    fetchRoles();
-    valiteSession();
-  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">

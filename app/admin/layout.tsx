@@ -1,6 +1,7 @@
 "use client";
 
 import { SideBar } from "@/components/my-components/SideBar";
+import { AuthContextProvider } from "@/context/auth-context";
 
 export default function AdminLayout({
   children,
