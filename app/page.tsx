@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import useFetchApi from "@/hooks/use-fetch";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Home() {
   const { login, user, isLoading } = useAuth();
@@ -54,7 +55,20 @@ export default function Home() {
       await new Promise((resolve) => setTimeout(resolve, 800));
       router.push("/admin/perfil");
     } catch (error: any) {
-      alert(error?.message || "Error al iniciar sesión");
+      let errorMessage = "Error al iniciar sesión";
+
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(", ");
+        } else if (typeof msg === "string") {
+          errorMessage = msg;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, { duration: 4000 });
       setLoading(false);
     }
   };
@@ -62,6 +76,7 @@ export default function Home() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const loadingToast = toast.loading("Registrando...");
 
     try {
       const payload = {
@@ -80,6 +95,10 @@ export default function Home() {
         payload
       );
 
+      toast.success("¡Registro exitoso! Redirigiendo...", {
+        id: loadingToast,
+      });
+
       // Guardar token
       if (typeof window !== "undefined") {
         localStorage.setItem("token", response.token);
@@ -90,7 +109,23 @@ export default function Home() {
         window.location.href = "/admin/perfil"; // Usar href para forzar recarga completa
       }, 500);
     } catch (error: any) {
-      alert(error?.message || "Error al registrar");
+      let errorMessage = "Error al registrar";
+
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(", ");
+        } else if (typeof msg === "string") {
+          errorMessage = msg;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, {
+        id: loadingToast,
+        duration: 5000,
+      });
       setLoading(false);
     }
   };
@@ -105,6 +140,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+      <Toaster position="top-right" />
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg dark:bg-zinc-900">
         {/* Toggle between Login and Register */}
         <div className="flex gap-4 mb-6 border-b dark:border-zinc-700">
