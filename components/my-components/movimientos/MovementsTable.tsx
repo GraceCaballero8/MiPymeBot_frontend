@@ -121,11 +121,13 @@ export function MovementsTable() {
                 disabled={loading}
               >
                 <option value="">Seleccionar producto...</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.sku}>
-                    {product.sku} - {product.name}
-                  </option>
-                ))}
+                {products
+                  .filter((product) => product.is_active)
+                  .map((product) => (
+                    <option key={product.id} value={product.sku}>
+                      {product.sku} - {product.name}
+                    </option>
+                  ))}
               </select>
             </div>
 
