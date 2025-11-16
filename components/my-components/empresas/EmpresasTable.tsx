@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Company } from "@/app/interfaces/company.interface";
 import toast, { Toaster } from "react-hot-toast";
 import { Edit2, Trash2, Search } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 
 export function EmpresasTable() {
+  const { get } = useFetchApi();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,17 +19,8 @@ export function EmpresasTable() {
   async function fetchCompanies() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
-
-      const response = await axios.get("http://localhost:4000/api/company", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const companiesData = Array.isArray(response.data) ? response.data : [];
+      const data = await get<Company[]>("/company");
+      const companiesData = Array.isArray(data) ? data : [];
       setCompanies(companiesData.filter((c: any) => c?.name));
     } catch (error) {
       console.error("Error fetching companies:", error);

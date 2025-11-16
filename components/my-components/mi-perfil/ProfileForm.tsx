@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Profile } from "@/app/interfaces/profile.interface";
 import toast, { Toaster } from "react-hot-toast";
+import useFetchApi from "@/hooks/use-fetch";
 
 export function ProfileForm() {
+  const { get, patch } = useFetchApi();
   const [form, setForm] = useState<Partial<Profile>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:4000/api/profile", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => {
-        const data = res.data;
+    get<Profile>("/profile")
+      .then((data) => {
         setForm({
           first_name: data.first_name,
           last_name_paternal: data.last_name_paternal,
@@ -36,7 +33,7 @@ export function ProfileForm() {
         toast.error("Error al cargar el perfil");
         setLoading(false);
       });
-  }, []);
+  }, [get]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -59,9 +56,7 @@ export function ProfileForm() {
         profile_image: form.profile_image || undefined,
       };
 
-      await axios.patch("http://localhost:4000/api/profile", updateData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      await patch<Profile, typeof updateData>("/profile", updateData);
       toast.success("¡Perfil actualizado exitosamente!", {
         id: loadingToast,
         duration: 3000,

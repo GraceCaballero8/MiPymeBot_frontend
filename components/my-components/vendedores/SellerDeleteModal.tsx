@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Dialog,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Seller } from "@/app/interfaces/seller.interface";
 import { AlertTriangle } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 
 interface SellerDeleteModalProps {
   open: boolean;
@@ -25,6 +25,7 @@ export function SellerDeleteModal({
   onClose,
   onSuccess,
 }: SellerDeleteModalProps) {
+  const { del } = useFetchApi();
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -32,10 +33,7 @@ export function SellerDeleteModal({
     const loadingToast = toast.loading("Eliminando vendedor...");
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:4000/api/users/${seller.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await del<{ message: string }>(`/users/${seller.id}`);
 
       toast.success("¡Vendedor eliminado exitosamente!", {
         id: loadingToast,

@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Seller } from "@/app/interfaces/seller.interface";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, Search, Trash2, Edit2, Users } from "lucide-react";
 import { SellerAddModal } from "./SellerAddModal";
 import { SellerEditModal } from "./SellerEditModal";
 import { SellerDeleteModal } from "./SellerDeleteModal";
+import useFetchApi from "@/hooks/use-fetch";
 
 export function SellersTable() {
+  const { get } = useFetchApi();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,18 +29,8 @@ export function SellersTable() {
   async function fetchSellers() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
-      const response = await axios.get(
-        "http://localhost:4000/api/users/sellers",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setSellers(response.data || []);
+      const data = await get<Seller[]>("/users/sellers");
+      setSellers(data || []);
     } catch (error) {
       console.error("Error fetching sellers:", error);
       toast.error("Error al cargar los vendedores");

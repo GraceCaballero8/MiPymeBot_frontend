@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { RefreshCw, FileDown, AlertTriangle, Package } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 import { InventoryStatus } from "@/app/interfaces/inventory.interface";
 
 export function InventoryTable() {
+  const { get } = useFetchApi();
   const [inventory, setInventory] = useState<InventoryStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<
@@ -20,20 +21,8 @@ export function InventoryTable() {
   async function fetchInventory() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
-
-      const response = await axios.get(
-        "http://localhost:4000/api/inventory/status",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setInventory(response.data || []);
+      const data = await get<InventoryStatus[]>("/inventory/status");
+      setInventory(data || []);
       toast.success("Inventario actualizado");
     } catch (error) {
       console.error("Error fetching inventory:", error);

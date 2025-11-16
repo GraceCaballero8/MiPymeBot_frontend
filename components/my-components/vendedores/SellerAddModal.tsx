@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Dialog,
@@ -10,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 
 interface SellerAddModalProps {
   open: boolean;
@@ -22,6 +22,7 @@ export function SellerAddModal({
   onClose,
   onSuccess,
 }: SellerAddModalProps) {
+  const { post } = useFetchApi();
   const [form, setForm] = useState({
     first_name: "",
     last_name_paternal: "",
@@ -49,10 +50,7 @@ export function SellerAddModal({
     const loadingToast = toast.loading("Agregando vendedor...");
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.post("http://localhost:4000/api/users/sellers", form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await post<{ message: string }, typeof form>("/users/sellers", form);
 
       toast.success("¡Vendedor agregado exitosamente!", {
         id: loadingToast,

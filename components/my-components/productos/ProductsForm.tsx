@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { Package, Plus, Edit, X } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 import {
   Product,
   ProductGroup,
@@ -12,6 +12,7 @@ import {
 } from "@/app/interfaces/product.interface";
 
 export function ProductsForm() {
+  const { get, post, patch } = useFetchApi();
   const [products, setProducts] = useState<Product[]>([]);
   const [groups, setGroups] = useState<ProductGroup[]>([]);
   const [units, setUnits] = useState<UnitOfMeasure[]>([]);
@@ -45,17 +46,8 @@ export function ProductsForm() {
   async function fetchProducts() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
-
-      const response = await axios.get("http://localhost:4000/api/products", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setProducts(response.data || []);
+      const data = await get<Product[]>("/products");
+      setProducts(data || []);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("Error al cargar los productos");
@@ -67,14 +59,8 @@ export function ProductsForm() {
 
   async function fetchGroups() {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:4000/api/products/groups",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setGroups(response.data || []);
+      const data = await get<ProductGroup[]>("/products/groups");
+      setGroups(data || []);
     } catch (error) {
       console.error("Error fetching groups:", error);
     }
@@ -82,14 +68,8 @@ export function ProductsForm() {
 
   async function fetchUnits() {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:4000/api/products/units",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setUnits(response.data || []);
+      const data = await get<UnitOfMeasure[]>("/products/units");
+      setUnits(data || []);
     } catch (error) {
       console.error("Error fetching units:", error);
     }
@@ -110,14 +90,9 @@ export function ProductsForm() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.post("http://localhost:4000/api/products", formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await post<Product, CreateProductDto>("/products", formData);
 
-      toast.success("Producto registrado exitosamente");
-
-      // Limpiar formulario
+      toast.success("Producto registrado exitosamente"); // Limpiar formulario
       setFormData({
         sku: "",
         name: "",
@@ -168,13 +143,9 @@ export function ProductsForm() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `http://localhost:4000/api/products/${editingProduct.id}`,
-        editFormData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      await patch<Product, typeof editFormData>(
+        `/products/${editingProduct.id}`,
+        editFormData
       );
 
       toast.success("Producto actualizado exitosamente");

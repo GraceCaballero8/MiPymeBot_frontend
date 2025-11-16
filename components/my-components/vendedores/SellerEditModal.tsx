@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import {
   Dialog,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Seller } from "@/app/interfaces/seller.interface";
 import { X } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 
 interface SellerEditModalProps {
   open: boolean;
@@ -25,6 +25,7 @@ export function SellerEditModal({
   onClose,
   onSuccess,
 }: SellerEditModalProps) {
+  const { patch } = useFetchApi();
   const [form, setForm] = useState({
     first_name: "",
     last_name_paternal: "",
@@ -56,10 +57,10 @@ export function SellerEditModal({
     const loadingToast = toast.loading("Actualizando vendedor...");
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(`http://localhost:4000/api/users/${seller.id}`, form, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await patch<{ message: string }, typeof form>(
+        `/users/${seller.id}`,
+        form
+      );
 
       toast.success("¡Vendedor actualizado exitosamente!", {
         id: loadingToast,

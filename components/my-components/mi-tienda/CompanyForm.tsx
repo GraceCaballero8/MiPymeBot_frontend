@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { Company } from "@/app/interfaces/company.interface";
+import useFetchApi from "@/hooks/use-fetch";
 
 export function CompanyForm() {
+  const { get, patch } = useFetchApi();
   const [company, setCompany] = useState<Partial<Company>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,12 +18,9 @@ export function CompanyForm() {
   async function fetchCompanyData() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:4000/api/company/my", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.data) {
-        setCompany(response.data);
+      const data = await get<Company>("/company/my");
+      if (data) {
+        setCompany(data);
       }
     } catch (error) {
       toast.error("Error al cargar los datos de la empresa");
@@ -49,8 +47,6 @@ export function CompanyForm() {
     const loadingToast = toast.loading("Guardando cambios...");
 
     try {
-      const token = localStorage.getItem("token");
-
       // Enviar solo los campos editables (sin id, admin_id, timestamps, etc.)
       const updateData = {
         name: company.name,
@@ -62,12 +58,9 @@ export function CompanyForm() {
         logo_url: company.logo_url,
       };
 
-      await axios.patch(
-        `http://localhost:4000/api/company/${company.id}`,
-        updateData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      await patch<Company, typeof updateData>(
+        `/company/${company.id}`,
+        updateData
       );
       toast.success("¡Empresa actualizada exitosamente!", { id: loadingToast });
       fetchCompanyData();

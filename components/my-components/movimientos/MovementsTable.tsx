@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import useFetchApi from "@/hooks/use-fetch";
 import { CreateMovementDto } from "@/app/interfaces/inventory.interface";
 import { Product } from "@/app/interfaces/product.interface";
 
 export function MovementsTable() {
+  const { get, post } = useFetchApi();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,17 +28,8 @@ export function MovementsTable() {
   async function fetchProducts() {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
-
-      const response = await axios.get("http://localhost:4000/api/products", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setProducts(response.data || []);
+      const data = await get<Product[]>("/products");
+      setProducts(data || []);
     } catch (error) {
       console.error("Error fetching products:", error);
       toast.error("Error al cargar los productos");
@@ -57,21 +49,15 @@ export function MovementsTable() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(
-        "http://localhost:4000/api/inventory/movements",
+      const response = await post<{ message: string }, typeof formData>(
+        "/inventory/movements",
         {
           ...formData,
           movement_date: new Date(formData.movement_date).toISOString(),
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      toast.success(
-        response.data.message || "Movimiento registrado exitosamente"
-      );
+      toast.success(response.message || "Movimiento registrado exitosamente");
 
       // Limpiar formulario
       setFormData({

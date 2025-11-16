@@ -1,9 +1,10 @@
 "use client";
 
-import axios from "axios";
 import { useEffect, useState } from "react";
+import useFetchApi from "@/hooks/use-fetch";
 
 export default function Home() {
+  const { get, post } = useFetchApi();
   const [isLogin, setIsLogin] = useState(true);
   const [isCompany, setIsCompany] = useState(false);
 
@@ -38,14 +39,8 @@ export default function Home() {
 
   async function fetchRoles() {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:4000/api/roles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setRoles(response.data.filter((role: any) => role.name !== "admin"));
+      const data = await get<any[]>("/roles");
+      setRoles(data.filter((role: any) => role.name !== "admin"));
     } catch (error) {
       console.error("Error fetching roles:", error);
     }
@@ -56,19 +51,19 @@ export default function Home() {
       e.preventDefault();
       setLoading(true);
       console.log("Login:", { email: loginEmail, password: loginPassword });
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/login",
-        {
-          email: loginEmail,
-          password: loginPassword,
-        }
-      );
+      const response = await post<
+        { user: { role: string }; token: string },
+        { email: string; password: string }
+      >("/auth/login", {
+        email: loginEmail,
+        password: loginPassword,
+      });
 
       console.log(response);
       // Backend devuelve { user, token } en login
-      const token = response.data.token || response.data.accessToken;
+      const token = response.token;
       localStorage.setItem("token", token);
-      const userRole = response.data.user.role;
+      const userRole = response.user.role;
 
       if (userRole === "admin") {
         window.location.href = "/admin?view=profile";
@@ -103,11 +98,11 @@ export default function Home() {
         gender: registerData.gender,
       };
 
-      const response = await axios.post(
-        "http://localhost:4000/api/auth/register",
+      const response = await post<{ token: string }, typeof payload>(
+        "/auth/register",
         payload
       );
-      const token = response.data.token || response.data.accessToken;
+      const token = response.token;
 
       localStorage.setItem("token", token);
       window.location.href = "/admin?view=profile";
@@ -125,13 +120,9 @@ export default function Home() {
       return;
     }
 
-    const response = await axios.get("http://localhost:4000/api/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const data = await get<{ role: { name: string } }>("/users/me");
 
-    const role = response.data.role.name;
+    const role = data.role.name;
     if (role === "admin") {
       window.location.href = "/admin?view=profile";
     } else if (role === "client") {
