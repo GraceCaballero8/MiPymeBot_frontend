@@ -86,12 +86,20 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
           localStorage.setItem("token", response.token);
         }
         setToken(response.token);
-        setUser(response.user);
+
+        // Cargar datos completos del usuario desde el backend
+        try {
+          const userData = await get<User>("/users/me");
+          setUser(userData);
+        } catch {
+          // Si falla, usar los datos de la respuesta de login
+          setUser(response.user);
+        }
       } catch (error) {
         throw error;
       }
     },
-    [post]
+    [post, get]
   );
 
   const logout = useCallback(async () => {

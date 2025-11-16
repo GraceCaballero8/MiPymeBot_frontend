@@ -69,9 +69,16 @@ export function MovementsTable() {
       });
     } catch (error: any) {
       console.error("Error creating movement:", error);
-      toast.error(
-        error.response?.data?.message || "Error al registrar el movimiento"
-      );
+
+      // Mostrar el mensaje específico del backend (ej: stock insuficiente)
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error al registrar el movimiento";
+
+      toast.error(errorMessage, {
+        duration: 5000, // 5 segundos para mensajes de error importantes
+      });
     } finally {
       setSubmitting(false);
     }

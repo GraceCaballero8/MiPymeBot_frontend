@@ -41,7 +41,7 @@ export default function Home() {
   // Redirigir si ya está autenticado
   useEffect(() => {
     if (!isLoading && user) {
-      router.push("/admin?view=profile");
+      router.replace("/admin/perfil");
     }
   }, [user, isLoading, router]);
 
@@ -51,11 +51,11 @@ export default function Home() {
 
     try {
       await login({ email: loginEmail, password: loginPassword });
-      // El AuthContext se encarga de la redirección
-      router.push("/admin?view=profile");
+      // Esperar a que el contexto se actualice completamente
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      router.push("/admin/perfil");
     } catch (error: any) {
       alert(error?.message || "Error al iniciar sesión");
-    } finally {
       setLoading(false);
     }
   };
@@ -82,17 +82,17 @@ export default function Home() {
         payload
       );
 
-      // Guardar token y hacer login automático
+      // Guardar token
       if (typeof window !== "undefined") {
         localStorage.setItem("token", response.token);
       }
 
-      // Redirigir al panel
-      router.push("/admin?view=profile");
-      window.location.reload(); // Recargar para que el AuthContext actualice
+      // Esperar y redirigir
+      setTimeout(() => {
+        window.location.href = "/admin/perfil"; // Usar href para forzar recarga completa
+      }, 500);
     } catch (error: any) {
       alert(error?.message || "Error al registrar");
-    } finally {
       setLoading(false);
     }
   };

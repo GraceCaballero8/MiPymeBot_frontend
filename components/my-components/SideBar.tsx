@@ -25,19 +25,13 @@ const menuItems = [
     href: "/admin/mi-tienda",
     label: "Mi Tienda",
     icon: Store,
-    role: ["admin", "vendedor"],
+    role: ["admin"], // Solo admin
   },
   {
     href: "/admin/vendedores",
     label: "Vendedores",
     icon: Users,
-    role: ["admin", "vendedor"],
-  },
-  {
-    href: "/admin/empresas",
-    label: "Empresas",
-    icon: Building2,
-    role: ["admin"],
+    role: ["admin"], // Solo admin
   },
   {
     href: "/admin/productos",
@@ -61,8 +55,7 @@ const menuItems = [
 
 export function SideBar() {
   const pathname = usePathname();
-
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -74,12 +67,29 @@ export function SideBar() {
     return item.role.includes(user.role.name);
   });
 
+  // Mostrar loading mientras se carga el usuario
+  if (isLoading) {
+    return (
+      <aside className="w-64 bg-white border-r border-gray-200 p-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            Cargando...
+          </h1>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="w-64 bg-white border-r border-gray-200 p-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
           <Users className="w-6 h-6" />
-          {user?.role?.name === "admin" ? "Admin Panel" : "Panel Vendedor"}
+          {user?.role?.name === "admin" ? "Panel Admin" : "Panel Vendedor"}
         </h1>
         {user && (
           <p className="text-sm text-gray-600 mt-2">
