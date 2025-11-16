@@ -107,9 +107,9 @@ export default function Home() {
         "http://localhost:4000/api/auth/register",
         payload
       );
-      const { accessToken } = response.data;
+      const token = response.data.token || response.data.accessToken;
 
-      localStorage.setItem("token", accessToken);
+      localStorage.setItem("token", token);
       window.location.href = "/admin?view=profile";
     } catch (error: any) {
       alert(error.response?.data?.message || "Error al registrar");
