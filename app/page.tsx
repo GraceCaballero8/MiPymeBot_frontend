@@ -23,7 +23,6 @@ export default function Home() {
     last_name_paternal: "",
     last_name_maternal: "",
     dni: "",
-    dni_verifier: "",
     birth_date: "",
     gender: "MASCULINO" as "MASCULINO" | "FEMENINO",
   });
@@ -72,7 +71,6 @@ export default function Home() {
         last_name_paternal: registerData.last_name_paternal,
         last_name_maternal: registerData.last_name_maternal,
         dni: registerData.dni,
-        dni_verifier: registerData.dni_verifier,
         birth_date: registerData.birth_date,
         gender: registerData.gender,
       };
@@ -298,25 +296,6 @@ export default function Home() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
                   placeholder="12345678"
                   maxLength={8}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="dni_verifier"
-                  className="block text-sm font-medium mb-2 dark:text-gray-300"
-                >
-                  Dígito
-                </label>
-                <input
-                  id="dni_verifier"
-                  name="dni_verifier"
-                  type="text"
-                  value={registerData.dni_verifier}
-                  onChange={handleRegisterChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
-                  placeholder="5"
-                  maxLength={1}
                 />
               </div>
             </div>

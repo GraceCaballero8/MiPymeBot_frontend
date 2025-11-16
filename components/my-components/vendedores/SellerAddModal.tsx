@@ -30,7 +30,6 @@ export function SellerAddModal({
     email: "",
     password: "",
     dni: "",
-    dni_verifier: "",
     birth_date: "",
     gender: "MASCULINO",
     phone: "",
@@ -64,7 +63,6 @@ export function SellerAddModal({
         email: "",
         password: "",
         dni: "",
-        dni_verifier: "",
         birth_date: "",
         gender: "MASCULINO",
         phone: "",
@@ -187,20 +185,6 @@ export function SellerAddModal({
                 required
                 maxLength={8}
                 pattern="[0-9]{8}"
-                className="w-full px-3 py-2 border rounded-md"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Dígito Verificador *
-              </label>
-              <input
-                type="text"
-                name="dni_verifier"
-                value={form.dni_verifier}
-                onChange={handleChange}
-                required
-                maxLength={1}
                 className="w-full px-3 py-2 border rounded-md"
               />
             </div>

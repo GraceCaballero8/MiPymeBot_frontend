@@ -19,7 +19,6 @@ export function ProfileForm() {
           last_name_paternal: data.last_name_paternal,
           last_name_maternal: data.last_name_maternal,
           dni: data.dni,
-          dni_verifier: data.dni_verifier,
           birth_date: data.birth_date?.split("T")[0],
           gender: data.gender,
           phone: data.phone || "",

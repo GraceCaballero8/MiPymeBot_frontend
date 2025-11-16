@@ -27,7 +27,6 @@ export interface RegisterCredentials {
   last_name_paternal: string;
   last_name_maternal: string;
   dni: string;
-  dni_verifier: string;
   birth_date: string;
   gender: "MASCULINO" | "FEMENINO";
 }
