@@ -1,7 +1,7 @@
 "use client";
 
-import { ProductsTable } from "@/components/my-components/productos/ProductsTable";
+import { ProductsForm } from "@/components/my-components/productos/ProductsForm";
 
 export default function ProductosPage() {
-  return <ProductsTable />;
+  return <ProductsForm />;
 }
