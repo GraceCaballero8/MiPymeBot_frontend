@@ -8,7 +8,7 @@ export interface Seller {
   dni: string;
   birth_date: string;
   gender: "MASCULINO" | "FEMENINO";
-  status: "ACTIVE" | "INACTIVE";
+  is_active: boolean;
   phone?: string;
   address?: string;
   profile_image?: string;

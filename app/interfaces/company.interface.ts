@@ -7,6 +7,7 @@ export interface Company {
   address?: string;
   description?: string;
   logo_url?: string;
+  image_url?: string;
   phone?: string;
   sector: string;
   updated_at: string;

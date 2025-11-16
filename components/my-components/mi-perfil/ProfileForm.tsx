@@ -216,6 +216,22 @@ export function ProfileForm() {
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                URL de Imagen de Perfil
+              </label>
+              <input
+                type="url"
+                name="profile_image"
+                value={form.profile_image || ""}
+                onChange={handleChange}
+                placeholder="https://ejemplo.com/mi-foto.jpg"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Ingresa la URL de tu imagen de perfil
+              </p>
+            </div>
           </div>
 
           <div className="border-t pt-6">

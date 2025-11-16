@@ -56,6 +56,7 @@ export function CompanyForm() {
         address: company.address,
         description: company.description,
         logo_url: company.logo_url,
+        image_url: company.image_url,
       };
 
       await patch<Company, typeof updateData>(
@@ -219,6 +220,25 @@ export function CompanyForm() {
                 placeholder="https://ejemplo.com/logo.png"
                 className="w-full px-3 py-2 border rounded-md"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                URL de la imagen del logo de tu tienda
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-1">
+                URL de imagen de la tienda
+              </label>
+              <input
+                type="url"
+                name="image_url"
+                value={company.image_url || ""}
+                onChange={handleChange}
+                placeholder="https://ejemplo.com/tienda.jpg"
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                URL de una imagen representativa de tu tienda o negocio
+              </p>
             </div>
           </div>
 

@@ -5,6 +5,7 @@ export interface Product {
   slug: string;
   price?: number;
   min_stock: number;
+  is_active: boolean;
   unit_id: number;
   group_id: number;
   user_id: number;

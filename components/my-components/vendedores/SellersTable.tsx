@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { Seller } from "@/app/interfaces/seller.interface";
 import toast, { Toaster } from "react-hot-toast";
-import { Plus, Search, Trash2, Edit2, Users } from "lucide-react";
+import { Plus, Search, Edit2, Users } from "lucide-react";
 import { SellerAddModal } from "./SellerAddModal";
 import { SellerEditModal } from "./SellerEditModal";
-import { SellerDeleteModal } from "./SellerDeleteModal";
 import useFetchApi from "@/hooks/use-fetch";
+import { Switch } from "@/components/ui/switch";
 
 export function SellersTable() {
-  const { get } = useFetchApi();
+  const { get, patch } = useFetchApi();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +19,6 @@ export function SellersTable() {
   >("ALL");
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
 
   useEffect(() => {
@@ -45,10 +44,41 @@ export function SellersTable() {
     setOpenEditModal(true);
   };
 
-  const handleDelete = (seller: Seller) => {
-    setSelectedSeller(seller);
-    setOpenDeleteModal(true);
-  };
+  async function handleToggleActive(seller: Seller) {
+    const previousState = seller.is_active;
+
+    // Actualización optimista: cambiar el estado inmediatamente en la UI
+    setSellers((prevSellers) =>
+      prevSellers.map((s) =>
+        s.id === seller.id ? { ...s, is_active: !s.is_active } : s
+      )
+    );
+
+    try {
+      await patch(`/users/sellers/${seller.id}/toggle-active`, {});
+      toast.success(
+        `Vendedor ${previousState ? "desactivado" : "activado"} exitosamente`
+      );
+    } catch (error: any) {
+      // Si falla, revertir el cambio
+      setSellers((prevSellers) =>
+        prevSellers.map((s) =>
+          s.id === seller.id ? { ...s, is_active: previousState } : s
+        )
+      );
+
+      let errorMessage = "Error al cambiar estado del vendedor";
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        if (Array.isArray(msg)) {
+          errorMessage = msg.join(", ");
+        } else if (typeof msg === "string") {
+          errorMessage = msg;
+        }
+      }
+      toast.error(errorMessage);
+    }
+  }
 
   const filteredSellers = sellers.filter((seller) => {
     const fullName =
@@ -59,13 +89,15 @@ export function SellersTable() {
       seller.dni?.includes(searchQuery);
 
     const matchesStatus =
-      statusFilter === "ALL" || seller.status === statusFilter;
+      statusFilter === "ALL" ||
+      (statusFilter === "ACTIVE" && seller.is_active) ||
+      (statusFilter === "INACTIVE" && !seller.is_active);
 
     return matchesSearch && matchesStatus;
   });
 
-  const activeSellers = sellers.filter((s) => s.status === "ACTIVE").length;
-  const inactiveSellers = sellers.filter((s) => s.status === "INACTIVE").length;
+  const activeSellers = sellers.filter((s) => s.is_active).length;
+  const inactiveSellers = sellers.filter((s) => !s.is_active).length;
 
   return (
     <div className="space-y-6">
@@ -168,10 +200,10 @@ export function SellersTable() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Teléfono
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Estado
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                    Activo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                     Acciones
                   </th>
                 </tr>
@@ -196,29 +228,18 @@ export function SellersTable() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {seller.phone || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          seller.status === "ACTIVE"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {seller.status === "ACTIVE" ? "Activo" : "Inactivo"}
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <Switch
+                        checked={seller.is_active}
+                        onCheckedChange={() => handleToggleActive(seller)}
+                      />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button
                         onClick={() => handleEdit(seller)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900"
                       >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(seller)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-5 h-5" />
+                        <Edit2 className="w-5 h-5 inline" />
                       </button>
                     </td>
                   </tr>
@@ -236,27 +257,15 @@ export function SellersTable() {
       />
 
       {selectedSeller && (
-        <>
-          <SellerEditModal
-            open={openEditModal}
-            seller={selectedSeller}
-            onClose={() => {
-              setOpenEditModal(false);
-              setSelectedSeller(null);
-            }}
-            onSuccess={fetchSellers}
-          />
-
-          <SellerDeleteModal
-            open={openDeleteModal}
-            seller={selectedSeller}
-            onClose={() => {
-              setOpenDeleteModal(false);
-              setSelectedSeller(null);
-            }}
-            onSuccess={fetchSellers}
-          />
-        </>
+        <SellerEditModal
+          open={openEditModal}
+          seller={selectedSeller}
+          onClose={() => {
+            setOpenEditModal(false);
+            setSelectedSeller(null);
+          }}
+          onSuccess={fetchSellers}
+        />
       )}
     </div>
   );

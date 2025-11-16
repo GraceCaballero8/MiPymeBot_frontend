@@ -9,7 +9,6 @@ export interface User {
     name: string;
     alias: string;
   };
-  status: string;
   company_id?: number | null;
   created_at: string;
   updated_at: string;
